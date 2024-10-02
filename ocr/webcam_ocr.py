@@ -4,7 +4,7 @@ import pytesseract
 # Configure pytesseract path (update this to your Tesseract installation path)
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'  # Update for your installation
 
-# Function to start OCR detection and return text
+# Function to start OCR detection and return digits
 def start_ocr_detection(update_callback):
     cap = cv2.VideoCapture(0)  # Open the default webcam
 
@@ -21,29 +21,30 @@ def start_ocr_detection(update_callback):
         # Use pytesseract to detect text in the frame
         ocr_result = pytesseract.image_to_data(gray_frame, output_type=pytesseract.Output.DICT)
 
-        # Extract text and locations
+        # Extract digits and locations
         text_data = []
         n_boxes = len(ocr_result['text'])
         for i in range(n_boxes):
             if int(ocr_result['conf'][i]) > 60:  # Only consider confident text detections
-                (x, y, w, h) = (ocr_result['left'][i], ocr_result['top'][i], ocr_result['width'][i], ocr_result['height'][i])
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Draw bounding box
                 detected_text = ocr_result['text'][i].strip()  # Strip any leading/trailing spaces
-                if detected_text:
+                if detected_text.isdigit():  # Only keep digits
+                    (x, y, w, h) = (ocr_result['left'][i], ocr_result['top'][i], ocr_result['width'][i], ocr_result['height'][i])
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Draw bounding box
+                    
                     text_data.append(detected_text)
-                
-                    # Add detected text to the frame
+                    
+                    # Add detected digit to the frame
                     cv2.putText(frame, detected_text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
 
-        # If there's detected text, print it only if it's new
+        # If there are detected digits, print them only if they're new
         if text_data:
             recognized_text = " ".join(text_data)
             if recognized_text != last_detected_text:
-                print(f"Recognized Text: {recognized_text}")  # Print recognized text to console
+                print(f"Recognized Digits: {recognized_text}")  # Print recognized digits to console
                 last_detected_text = recognized_text  # Update the last detected text
             update_callback(recognized_text)  # Send detected text to GUI
 
-        # Show the frame with bounding boxes and detected text
+        # Show the frame with bounding boxes and detected digits
         cv2.imshow("OCR Webcam Feed", frame)
 
         # Press 'q' to quit the webcam stream
